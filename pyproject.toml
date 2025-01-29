@@ -1,0 +1,17 @@
+[project]
+name = "webcrawler"
+version = "1.0.0"
+description = "WebCrawler looks for all links available in a web page and its children. All links visited and external will provided to the user via REST API"
+authors = [
+    {name = "Carmine Sacco"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
