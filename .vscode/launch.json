@@ -16,6 +16,17 @@
       "request": "launch",
       "program": "${file}",
       "args": ["pippo"]
+    },
+    {
+      "name": "Debug Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "console": "integratedTerminal",
+      "jinja": true,
+      "env": {
+          "PYTHONPATH": "${workspaceFolder};${workspaceFolder}/webcrawler"
+      }
     }
   ]
 }
