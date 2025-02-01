@@ -16,7 +16,6 @@ logger.addHandler(logFile)
 
 if __name__  == '__main__':
     # Start the webcrawler
-    
     if len(sys.argv) < 2:
         logger.error('Usage: python webcrawler.py <url>')
         sys.exit(1)
