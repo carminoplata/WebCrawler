@@ -4,7 +4,7 @@ from pydantic import BaseModel, HttpUrl
 class Link(BaseModel):
     url: HttpUrl
     visited: bool = False
-    links: 'Optional[set[Link]]' = None
+    #links: 'Optional[set[Link]]' = None
 
     def __hash__(self):
         return hash(self.url)
@@ -12,6 +12,9 @@ class Link(BaseModel):
     def __eq__(self, other: 'Link') -> bool:
         return self.url == other.url
 
+    def __str__(self):
+        return str(self.url)
+    
     def _display(self) -> str:
         return str(self.url)
     

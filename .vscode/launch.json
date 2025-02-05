@@ -15,7 +15,7 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      "args": ["pippo"]
+      "args": ["https://www.google.com/"]
     },
     {
       "name": "Debug Tests",
@@ -28,7 +28,7 @@
           "PYTHONPATH": "${workspaceFolder};${workspaceFolder}/webcrawler;${workspaceFolder}/tests"
       },
       "args": [
-          "${workspaceFolder}/tests/network/test_parser.py",
+          "${workspaceFolder}/tests/test_taskmanager.py",
       ]
     }
   ]

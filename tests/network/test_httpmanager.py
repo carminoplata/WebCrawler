@@ -7,7 +7,7 @@ sys.path.append('..')
 #from aioresponses import aioresponses
 from pydantic import HttpUrl
 from webcrawler.network.httpmanager import HttpManager
-from utils.utility import read_file_content
+#from utils.utility import read_file_content
 # webcrawler/network/test_httpmanager.py
 
 
@@ -29,11 +29,10 @@ class TestHttpManager:
     
     @pytest.mark.asyncio(loop_scope='class')
     async def test_fetch_success(self, http_manager: HttpManager):
-        #with aioresponses() as m:
-            #m.get(url, status=200, body="Success")
-        ##expectedPage = read_file_content('googlePage.html')
-        response = await http_manager.fetch()
-        assert len(response) > 0 and 'Google' in response
+        response = await http_manager.fetch('http://www.google.com')
+        assert len(response.htmlPage) > 0 and \
+            'Google' in response.htmlPage and \
+            response.pageUrl == 'http://www.google.com'
 
     @pytest.mark.asyncio(loop_scope='class')
     async def test_fetch_child_success(self, http_manager: HttpManager):
