@@ -1,28 +1,27 @@
-from typing import Optional
 from pydantic import BaseModel, HttpUrl
 
 class Link(BaseModel):
+    """ Link is a Pydantic model to represent a valid http/https url. 
+    Link has got only one field, visited, to track that the url has 
+    been visited during an elaboration process (print, crawl, store).
+    It can be used inside a dictionary as key via its physical url.
+
+    Attributes:
+        url (HttpUrl): HTTP/HTTPS URL
+        visited (bool): status to check if the link has been visited or not
+    """
     url: HttpUrl
     visited: bool = False
-    #links: 'Optional[set[Link]]' = None
 
-    def __hash__(self):
+
+    def __hash__(self) -> int:
         return hash(self.url)
     
     def __eq__(self, other: 'Link') -> bool:
         return self.url == other.url
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.url)
     
     def _display(self) -> str:
         return str(self.url)
-    
-    def is_page(self) -> bool:
-        return self.links is not None
-    
-    def add_link(self, link: 'Link') -> None:
-        if self.links is None:
-            self.links = set()
-        self.links.add(link)
-

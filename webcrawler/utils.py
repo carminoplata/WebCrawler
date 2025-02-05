@@ -15,10 +15,10 @@ def is_relative_to_base(url: str, base_url:HttpUrl) -> tuple[bool, HttpUrl | Non
     if urlparsed:
         try:
             if is_same_host(urlparsed.netloc, base_url.host) and \
-                urlparsed.path.startswith(base_url.path):
+                urlparsed.path:
                 return True, HttpUrl(url)
             elif not urlparsed.netloc and \
-                urlparsed.path.startswith(base_url.path):
+                urlparsed.path and not urlparsed.scheme:
                 httpUrl = f'{str(base_url)}{url.strip('/')}' \
                     if url.startswith('/') \
                     else f'{str(base_url)}{url}'

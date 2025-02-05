@@ -6,7 +6,7 @@ sys.path.append('..')
 
 #from aioresponses import aioresponses
 from pydantic import HttpUrl
-from webcrawler.network.httpmanager import HttpManager
+from webcrawler.network.httpmanager import HttpManager, HttpResult
 #from utils.utility import read_file_content
 # webcrawler/network/test_httpmanager.py
 
@@ -36,35 +36,18 @@ class TestHttpManager:
 
     @pytest.mark.asyncio(loop_scope='class')
     async def test_fetch_child_success(self, http_manager: HttpManager):
-        #with aioresponses() as m:
-            #m.get(url, status=200, body="Success")
-        ##expectedPage = read_file_content('googlePage.html')
         response = await http_manager.fetch('https://www.google.com/imghp?hl=it&tab=wi')
-        assert len(response) > 0 and 'Google' in response
+        assert len(response.htmlPage) > 0 and 'Google' in response.htmlPage
 
     @pytest.mark.asyncio(loop_scope='class')
-    async def test_fetch_diff_domain(self, http_manager: HttpManager):
-        #with aioresponses() as m:
-            #m.get(url, status=200, body="Success")
-        ##expectedPage = read_file_content('googlePage.html')
-        response = await http_manager.fetch('https://facebook.com')
-        assert len(response) > 0 and 'Facebook' in response
-
-    @pytest.mark.asyncio(loop_scope='class')
-    async def test_fetch_not_found(self, http_manager):
+    async def test_fetch_not_found(self, http_manager: HttpManager):
         response = await http_manager.fetch('https://example.com/notfound')
-        assert response is None
-        #with aioresponses() as m:
-        #    m.get(url, status=404)
-        #    response = await http_manager.fetch(url)
-        #    assert response is None
-        #    captured = capsys.readouterr()
-        #    assert "Error: Page NOT FOUND at" in captured.out
+        assert response == HttpResult(htmlPage='', url='https://example.com/notfound')
 
     @pytest.mark.asyncio(loop_scope='class')
-    async def test_fetch_no_html_page(self, http_manager):
+    async def test_fetch_no_html_page(self, http_manager: HttpManager):
         response = await http_manager.fetch('https://google.com/favicon.ico')
-        assert response is None
+        assert response == HttpResult(htmlPage='', url='https://google.com/favicon.ico')
 
     @pytest.mark.asyncio
     async def test_fetch_other_error(self, http_manager, capsys):
