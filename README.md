@@ -22,6 +22,7 @@ In order to run this project, please follow these instructions:
 
     b. `poetry run python webcrawler\webcraler.py <http_url|https_url>`
 
+**NOTE** To enable debug mode run `poetry run python webcrawler\webcraler.py <http_url|https_url> -d 1`
  
 # Solution
 The idea of the web crawler is based on producer/consumer pattern in order to generate multiple tasks according to available resources.
