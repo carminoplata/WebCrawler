@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from aiohttp import ClientSession, ClientTimeout
 from pydantic import HttpUrl
 
@@ -44,7 +45,7 @@ class HttpManager:
         self._timeout = 60 if 'timeout' not in kwargs else kwargs['timeout']
         self._base_url = base_url
         self._session = None
-        
+        self._debug: bool = kwargs['debug'] if 'debug' in kwargs else False        
     
     async def fetch(self, url: str) -> HttpResult:
         """ Fetch Coroutine to download html file of a web page
@@ -60,15 +61,21 @@ class HttpManager:
             only the webpage's url will be configured. 
         """
         task = asyncio.current_task().get_name()
-        logger.info(f'[Task {task}] - GET {url}')
+        logger.debug(f'[Task {task}] - GET {url}')
         await self.refresh_session()
         try:
             async with await self._session.get(url) as response:
                 if response.status == 200:
                     if response.content_type == HTML_MEDIA_TYPE or \
                         response.content_type == XHTML_MEDIA_TYPE:
-                        logger.info(f'[Task {task}] - 200 OK {url}')
+                        logger.debug(f'[Task {task}] - 200 OK {url}')
                         htmlPage = await response.text()
+                        if self._debug:
+                            suffix = f'.{url.split('.')[-1]}'
+                            logger.debug(f'Suffix {suffix}')
+                            with open(f'pages\\{url.split('//')[-1].removesuffix(suffix)}.html', 'w',
+                                      encoding='utf-8') as f:
+                                f.write(htmlPage)
                         return HttpResult(htmlPage, url)
                     else:
                         logger.warning(f'[Task {task}] - Unexpected ContentType: {response.content_type}')
@@ -79,6 +86,7 @@ class HttpManager:
                     logger.warning(f'[Task {task}] - Error: {response.status} at {url}')
                 return HttpResult('', url)
         except Exception as e:
+            logger.debug(f'[Task {task}] - ERROR {e}')
             logger.error(f'[Task {task}] - Error on fetching url {url}: {e}')
             return HttpResult('', url)
     

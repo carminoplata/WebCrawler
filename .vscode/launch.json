@@ -15,7 +15,7 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      "args": ["https://dorbit.space/"]
+      "args": ["https://csacco.eu"]
     },
     {
       "name": "Debug Tests",

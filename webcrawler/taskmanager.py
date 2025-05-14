@@ -26,10 +26,12 @@ class TaskManager():
     def __init__(self, base_url: HttpUrl, 
                  #httpmgr: HttpManager,
                  #parser: Parser,
+                 debug: bool = False,
                  max_producers: int = 1,
                  max_consumers: int = 1,
                  max_pages_in_mem: int = 1):
         self._baseurl: HttpUrl = base_url
+        self._debug : bool = debug
         self._pagesVisited: dict[str, Page] = {}
         self._producers: set[asyncio.Task] = set()
         self._consumers: set[asyncio.Task] = set()
@@ -39,7 +41,8 @@ class TaskManager():
         self._visitedLock: asyncio.Lock = asyncio.Lock()
         self.max_producers = max_producers
         self.max_consumers = max_consumers
-        self._httpmanager = HttpManager(self._baseurl)
+        self._httpmanager = HttpManager(self._baseurl, debug=self._debug)
+        self._stop: asyncio.Event = asyncio.Event()
 
     def get_links(self, htmlPage: HttpResult, links: list[str]) -> None: 
         """ Makes the parsing of html page retrieving only the links
@@ -71,8 +74,11 @@ class TaskManager():
                                                name=f'HtmlProducer_{i}')
                            for i in range(self.max_producers)]
 
-        await self.monitor_crawler()
+        #await self.monitor_crawler()
         
+        logger.debug(f'[Crawler] Waiting for stop...')
+        await self._stop.wait()
+        logger.info(f'[Crawler] Received Stop Event! Shutdown...')
         await self.shutdown()
 
     async def produce_html(self):
@@ -84,11 +90,17 @@ class TaskManager():
             # READ THE SAME LINK
             link = await self._linksToVisit.get()
             if str(link) not in self._visitedLinks:
-                logger.debug(f'[{task}] - Links to visit {str(self._linksToVisit)}')
+                logger.debug(f'[{task}] - Links to visit {self._linksToVisit.qsize()}')
                 logger.debug(f'[{task}] - GET {str(link)}')
                 httpResult = await self._httpmanager.fetch(str(link))
+                logger.debug(f'[{task}] - GOT RESPONSE FROM {str(link)}')
                 if httpResult.htmlPage:
+                    logger.debug(f'[{task}] - ADD TO PAGES')
+                    logger.debug(f'[{task}] - Queue {self._pages} {id(self._pages)}')
                     await self._pages.put(httpResult)
+                    logger.debug(f'[{task}] - ADDED TO PAGE')
+                else:
+                    logger.debug(f'[{task}] - EMPTY PAGE')
                 async with self._visitedLock:
                     self._visitedLinks.add(str(link))
             else:
@@ -105,17 +117,25 @@ class TaskManager():
         """
         task = asyncio.current_task().get_name()
         while True:
-            logger.debug(f'[{task}] - Consume New Page')
+            logger.debug(f'[{task}] - Consume New Page from {id(self._pages)}')
             page: HttpResult = await self._pages.get()
+            logger.debug(f'[{task}] - Parse page {page.pageUrl}')
             foundLinks: list[str] = []
             logger.debug(f'[{task}] - Look for links inside {page.pageUrl}')
             self.get_links(page, foundLinks)
+            logger.info(f'[{task}] - Found {len(foundLinks)} in {page.pageUrl}')
             for link in foundLinks:
                 await self.process_link(link, page.pageUrl)
             else:
                 # IF NO LINK ARE FOUND, THE PAGE MUST BE CREATED
+                logger.info(f'[{task}] - NO LINKS FOUND in {page.pageUrl}')
                 self._add_link_to_page(page.pageUrl, None)
             self._pages.task_done()
+            if self._pages.empty() and self._linksToVisit.empty():
+                logger.info(f'[{task}] - Completed No other thinks to do')
+                self._stop.set()
+            else:
+                logger.debug(f'[{task}] - Get new page')
 
     async def process_link(self, link: str, pageUrl: str):
         """
@@ -140,8 +160,8 @@ class TaskManager():
             if isChildPage:
                 async with self._visitedLock:
                     if str(newLink) not in self._visitedLinks:
-                        logger.debug(f'Adding Child Page {str(link)}')
-                        logger.debug(f'DBG: VisitedLinks {str(self._visitedLinks)}')
+                        logger.debug(f'[process_link] - Adding Child Page {str(link)}')
+                        logger.debug(f'[process_link] - VisitedLinks {str(self._visitedLinks)}')
                         await self._linksToVisit.put(newLink)
                     self._add_link_to_page(pageUrl, newLink)
             else:
@@ -153,7 +173,14 @@ class TaskManager():
         when the task are completed and the crawler 
         completed its job successfully.
         """
-        logger.debug('Monitor Start')
+        logger.debug('[Monitor] Start')
+        await asyncio.sleep(10)
+        while not self._linksToVisit.empty() and \
+            not self._pages.empty():
+            logger.debug('[Monitor] Retry Check in 10 s')
+            await asyncio.sleep(1)
+            logger.debug(f'[Monitor] LinkToVisit Empty {self._linksToVisit.empty()}')
+            logger.debug(f'[Monitor] Pages Empty {self._pages.empty()}')
         await self._linksToVisit.join()
         await self._pages.join()
         logger.debug('Monitor End')

@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import sys
 import logging
@@ -12,7 +13,7 @@ from network.httpmanager import HttpManager
 logging.config.fileConfig('conf/logging.conf')
 logger = logging.getLogger('webcrawler')
 
-async def runcrawler(url: str) -> dict[str, Page]:
+async def runcrawler(url: str, debug: bool = False) -> dict[str, Page]:
     """" Coroutine to run the crawler
     
     Args:
@@ -31,7 +32,7 @@ async def runcrawler(url: str) -> dict[str, Page]:
         logger.error(f'invalid url {url}')
         raise ValueError('Invalid Url', url)
     logger.info(f'Starting webcrawler with root page: {netUrl}')
-    taskMgr = TaskManager(netUrl)
+    taskMgr = TaskManager(netUrl, debug)
     foundPages = {}
     try:
         t1: float = time.time()
@@ -53,7 +54,7 @@ async def runcrawler(url: str) -> dict[str, Page]:
         logger.info(f'WebCrawler Interrupted! Error: {e}')
         e.with_traceback()
     except Exception as e:
-        print(f'WebCrawler Failed! Error: {e} {str(e)} {e.args}')
+        logger.error(f'WebCrawler Failed! Error: {e} {str(e)} {e.args}')
         e.with_traceback()
     finally:
         await taskMgr.shutdown()
@@ -92,8 +93,12 @@ if __name__  == '__main__':
     if len(sys.argv) < 2:
         logger.error('Usage: python webcrawler.py <url>')
         sys.exit(1)
+    parser = argparse.ArgumentParser(description='WebCrawler to collect links into page')
+    parser.add_argument('url', type=str, help='http or https url like http://example.com')
+    parser.add_argument('-d', '--debug', type=int, required=False, default=0, choices=[0, 1])
+    args = parser.parse_args()
     try:
-        pages = asyncio.run(runcrawler(sys.argv[1]))
+        pages = asyncio.run(runcrawler(args.url, args.debug))
         visit_pages(pages, print)
     except ValueError as e:
         logger.error(f'Error: {e}')
